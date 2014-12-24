@@ -44,7 +44,7 @@ function callGETService {
     fi
 
     echo "Calling URI (GET): " ${uri}
-    curl -X GET -H "${HEADER_ACCEPT}" -H "${HEADER_CONTENT_TYPE}" -u "${USER_NAME}:${USER_PASSW}" -k ${certAtt} "${ENGINE_URL}${uri}" --output "${COMM_FILE}" 2> /dev/null > "${COMM_FILE}"
+curl -X GET -H "${HEADER_ACCEPT}" -H "${HEADER_CONTENT_TYPE}" -u "${USER_NAME}:${USER_PASSW}" -k ${certAtt} "${ENGINE_URL}${uri}" --output "${COMM_FILE}" 2> /dev/null > "${COMM_FILE}"
 }
 
 function callPOSTService {
@@ -57,7 +57,22 @@ function callPOSTService {
     fi
 
     echo "Calling URI (POST): " ${uri}
-    curl -X POST -H "${HEADER_ACCEPT}" -H "${HEADER_CONTENT_TYPE}" -u "${USER_NAME}:${USER_PASSW}" "$certAtt" "${ENGINE_URL}${uri}" -d "${xml}" 2> /dev/null > "${COMM_FILE}"
+    echo "${ENGINE_URL}${uri}"
+    curl -X POST -H "${HEADER_ACCEPT}" -H "${HEADER_CONTENT_TYPE}" -u "${USER_NAME}:${USER_PASSW}" -k "$certAtt" "${ENGINE_URL}${uri}" -d "${xml}" -L 2> /dev/null> "${COMM_FILE}"
+}
+
+function callDELETEService {
+    local uri=$1
+    local xml=$2
+    local certAtt=""
+
+    if [[ -n "$CA_CERT_PATH" ]]; then
+        certAtt="--cacert $CA_CERT_PATH"
+    fi
+
+    echo "Calling URI (POST): " ${uri}
+    echo "${ENGINE_URL}${uri}"
+    curl -X DELETE -H "${HEADER_ACCEPT}" -H "${HEADER_CONTENT_TYPE}" -u "${USER_NAME}:${USER_PASSW}" -k "$certAtt" "${ENGINE_URL}${uri}" -d "${xml}" -L 2> /dev/null> "${COMM_FILE}"
 }
 
 function callPUTService {
@@ -70,7 +85,7 @@ function callPUTService {
     fi
 
     echo "Calling URI (PUT): " ${uri}
-    curl -X PUT -H "${HEADER_ACCEPT}" -H "${HEADER_CONTENT_TYPE}" -u "${USER_NAME}:${USER_PASSW}" "$certAtt" "${ENGINE_URL}${uri}" -d "${xml}" 2> /dev/null > "${COMM_FILE}"
+    curl -X PUT -H "${HEADER_ACCEPT}" -H "${HEADER_CONTENT_TYPE}" -u "${USER_NAME}:${USER_PASSW}" -k "$certAtt" "${ENGINE_URL}${uri}" -d "${xml}"-L  2> /dev/null> "${COMM_FILE}"
 }
 
 # wait till XPath returns non-zero number of rows from specified REST API GET service
@@ -106,6 +121,61 @@ function getHosts {
     callGETService "/api/hosts;max=1000"
     local c=`getXPathCount "/hosts/host[@id]"`
     echo "Current host count: " ${c}
+}
+
+
+#approves host
+function approveHost {
+	callGETService "/api/hosts;max=1000"
+    local c=`getXPathValue "/hosts/host[name='$1']/status/state"`
+    if [ "pending_approval" == "${c}" ]; then
+    	echo "$1 : Pending approval "
+    	local action_api=`getXPathValue "/hosts/host[name='$1']/actions/link[@rel='approve']/@href"`
+    	local xml="<action/>"
+		callPOSTService "${action_api}" "${xml}"
+	fi
+
+}
+
+#approves host
+function activateHost {
+	callGETService "/api/hosts;max=1000"
+    local c=`getXPathValue "/hosts/host[name='$1']/status/state"`
+    if [ "maintenance" == "${c}" ]; then
+    	echo "$1 : maintenance "
+    	local action_api=`getXPathValue "/hosts/host[name='$1']/actions/link[@rel='activate']/@href"`
+    	local xml="<action/>"
+		callPOSTService "${action_api}" "${xml}"
+	fi
+
+}
+
+#approves host
+function maintainHost {
+	callGETService "/api/hosts;max=1000"
+    local c=`getXPathValue "/hosts/host[name='$1']/status/state"`
+    if [ "up" == "${c}" ]; then
+    	echo "$1 : up "
+    	local action_api=`getXPathValue "/hosts/host[name='$1']/actions/link[@rel='deactivate']/@href"`
+    	local xml="<action/>"
+		callPOSTService "${action_api}" "${xml}"
+	fi
+
+}
+
+#approves host
+function removeHost {
+	callGETService "/api/hosts;max=1000"
+    local c=`getXPathValue "/hosts/host[name='$1']/status/state"`
+    if [ "maintenance" == "${c}" ]; then
+    	echo "$1 : maintenance "
+    	local host_id=`getXPathValue "/hosts/host[name='$1']/@id"`
+    	local action_api="/api/hosts/${host_id}"
+    	echo ${action_api}
+    	local xml="<action/>"
+		callDELETEService "${action_api}" "${xml}"
+	fi
+
 }
 
 # create host if it doesn't exist
