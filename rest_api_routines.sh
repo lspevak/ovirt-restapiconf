@@ -123,6 +123,12 @@ function getHosts {
     echo "Current host count: " ${c}
 }
 
+# wait for host state
+# host name
+# state to reach
+function waitForHostState {
+	waitForStatus "/api/hosts" "/hosts/host[name='$1']/status[state='$2']" "/hosts/host[name='${hostName}']/status/state" 10
+}
 
 #approves host
 function approveHost {
