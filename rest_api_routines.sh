@@ -113,6 +113,7 @@ function waitForStatus {
 
     if [[ "$status" == "0" ]]; then
         echo "Timeout, waiting interrupted."
+        exit 1
     fi
 }
 
