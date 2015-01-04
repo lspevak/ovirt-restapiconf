@@ -44,7 +44,7 @@ function callGETService {
     fi
 
     echo "Calling URI (GET): " ${uri}
-curl -X GET -H "${HEADER_ACCEPT}" -H "${HEADER_CONTENT_TYPE}" -u "${USER_NAME}:${USER_PASSW}" -k ${certAtt} "${ENGINE_URL}${uri}" --output "${COMM_FILE}" 2> /dev/null > "${COMM_FILE}"
+    curl -X GET -H "${HEADER_ACCEPT}" -H "${HEADER_CONTENT_TYPE}" -u "${USER_NAME}:${USER_PASSW}" -k ${certAtt} "${ENGINE_URL}${uri}" --output "${COMM_FILE}" 2> /dev/null > "${COMM_FILE}"
 }
 
 function callPOSTService {
@@ -128,60 +128,60 @@ function getHosts {
 # host name
 # state to reach
 function waitForHostState {
-	waitForStatus "/api/hosts" "/hosts/host[name='$1']/status[state='$2']" "/hosts/host[name='${hostName}']/status/state" 10
+    waitForStatus "/api/hosts" "/hosts/host[name='$1']/status[state='$2']" "/hosts/host[name='${hostName}']/status/state" 10
 }
 
 #approves host
 function approveHost {
-	callGETService "/api/hosts;max=1000"
+    callGETService "/api/hosts;max=1000"
     local c=`getXPathValue "/hosts/host[name='$1']/status/state"`
     if [ "pending_approval" == "${c}" ]; then
-    	echo "$1 : Pending approval "
-    	local action_api=`getXPathValue "/hosts/host[name='$1']/actions/link[@rel='approve']/@href"`
-    	local xml="<action/>"
-		callPOSTService "${action_api}" "${xml}"
-	fi
+        echo "$1 : Pending approval "
+        local action_api=`getXPathValue "/hosts/host[name='$1']/actions/link[@rel='approve']/@href"`
+        local xml="<action/>"
+        callPOSTService "${action_api}" "${xml}"
+    fi
 
 }
 
 #approves host
 function activateHost {
-	callGETService "/api/hosts;max=1000"
+    callGETService "/api/hosts;max=1000"
     local c=`getXPathValue "/hosts/host[name='$1']/status/state"`
     if [ "maintenance" == "${c}" ]; then
-    	echo "$1 : maintenance "
-    	local action_api=`getXPathValue "/hosts/host[name='$1']/actions/link[@rel='activate']/@href"`
-    	local xml="<action/>"
-		callPOSTService "${action_api}" "${xml}"
-	fi
+        echo "$1 : maintenance "
+        local action_api=`getXPathValue "/hosts/host[name='$1']/actions/link[@rel='activate']/@href"`
+        local xml="<action/>"
+        callPOSTService "${action_api}" "${xml}"
+    fi
 
 }
 
 #approves host
 function maintainHost {
-	callGETService "/api/hosts;max=1000"
+    callGETService "/api/hosts;max=1000"
     local c=`getXPathValue "/hosts/host[name='$1']/status/state"`
     if [ "up" == "${c}" ]; then
-    	echo "$1 : up "
-    	local action_api=`getXPathValue "/hosts/host[name='$1']/actions/link[@rel='deactivate']/@href"`
-    	local xml="<action/>"
-		callPOSTService "${action_api}" "${xml}"
-	fi
+        echo "$1 : up "
+        local action_api=`getXPathValue "/hosts/host[name='$1']/actions/link[@rel='deactivate']/@href"`
+        local xml="<action/>"
+        callPOSTService "${action_api}" "${xml}"
+    fi
 
 }
 
 #approves host
 function removeHost {
-	callGETService "/api/hosts;max=1000"
+    callGETService "/api/hosts;max=1000"
     local c=`getXPathValue "/hosts/host[name='$1']/status/state"`
     if [ "maintenance" == "${c}" ]; then
-    	echo "$1 : maintenance "
-    	local host_id=`getXPathValue "/hosts/host[name='$1']/@id"`
-    	local action_api="/api/hosts/${host_id}"
-    	echo ${action_api}
-    	local xml="<action/>"
-		callDELETEService "${action_api}" "${xml}"
-	fi
+        echo "$1 : maintenance "
+        local host_id=`getXPathValue "/hosts/host[name='$1']/@id"`
+        local action_api="/api/hosts/${host_id}"
+        echo ${action_api}
+        local xml="<action/>"
+        callDELETEService "${action_api}" "${xml}"
+    fi
 
 }
 
@@ -499,27 +499,27 @@ function createVirtualMachineCDROM {
 }
 
 function showList {
-	local xPath=$1
+    local xPath=$1
 
-	local c=`getXPathCount "${xPath}"`
+    local c=`getXPathCount "${xPath}"`
 
-	for i in $(seq 1 ${c})
-	do
-		local val=`getXPathValue "(${xPath})[$i]"`
-		echo ${val}
-	done
+    for i in $(seq 1 ${c})
+    do
+        local val=`getXPathValue "(${xPath})[$i]"`
+        echo ${val}
+    done
 
-	echo "Count: ${c}"
+    echo "Count: ${c}"
 }
 
 function showHostList {
-	getHosts
-	showList "/hosts/host/name"
+    getHosts
+    showList "/hosts/host/name"
 }
 
 function showVMList {
-	getVirtualMachines
-	showList "/vms/vm/name"
+    getVirtualMachines
+    showList "/vms/vm/name"
 }
 
 function getVMPools {
@@ -529,17 +529,17 @@ function getVMPools {
 }
 
 function updateVMPoolSize {
-	local vmPoolName=$1
+    local vmPoolName=$1
     local vmPoolSize=$2
 
-	getVMPools
+    getVMPools
     local c=`getXPathCount "/vmpools/vmpool[name='${vmPoolName}']"`
 
     if [[ "$c" == "0" ]]; then
-    	echo "VM Pool doesn't exist: ${vmPoolName}"
-	else
-		local idVMPool=`getXPathValue "/vmpools/vmpool[name='${vmPoolName}']/@id"`
-		local xml="<vmpool><name>${vmPoolName}</name><size>${vmPoolSize}</size></vmpool>"
+        echo "VM Pool doesn't exist: ${vmPoolName}"
+    else
+        local idVMPool=`getXPathValue "/vmpools/vmpool[name='${vmPoolName}']/@id"`
+        local xml="<vmpool><name>${vmPoolName}</name><size>${vmPoolSize}</size></vmpool>"
 
         callPUTService "/api/vmpools/${idVMPool}" "${xml}"
         cat ${COMM_FILE}
