@@ -112,7 +112,10 @@ function waitForStatus {
     done;
 
     if [[ "$status" == "0" ]]; then
-        echo "Timeout, waiting interrupted."
+        echo -e "\033[1m Error \033[0m :Timeout, waiting interrupted."
+        echo -e "\033[1m Listing latest restapi result \033[0m "
+        cat ${COMM_FILE}
+        echo -e "\033[1m Listing done \033[0m "
         exit 1
     fi
 }
